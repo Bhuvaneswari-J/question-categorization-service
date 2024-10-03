@@ -33,7 +33,7 @@ category-service: <br />
    &nbsp;&nbsp; Question will be categorized based on subject and keyword. <br />
 
 **Monolithic Architecture:** <br />
-    All services will be combined in one single application.
+    All services will be combined in one single application. <br />
     
 **Installation:** <br />
 Python-https://www.python.org/downloads/ <br />
@@ -72,3 +72,4 @@ curl -X POST http://localhost:5004/question -H "Content-Type: application/json" 
 
 curl http://localhost:5000/categorize/1   <br />
 
+Each python file can be executed using python app.py command.
