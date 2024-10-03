@@ -24,7 +24,13 @@ Question categorization microservice architecture consist of below microservices
 User-service: <br />
     User will be able to register and login. <br />
 Year-service: <br />
-    User can a year. <br />
+    User can add year. <br />
+exam-type-service: <br />
+    User can add exam type,subject and keyword. <br />
+question-service: <br />
+    User can add question. <br />
+category-service: <br />
+    Question will be categorized based on subject and keyword. <br />
 
 **Monolithic Architecture:** <br />
     
