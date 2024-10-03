@@ -1,37 +1,96 @@
-version: '3.8'
 services:
   user-service:
     build:
       context: ./user-service
     ports:
       - "5001:5000"
-  
-  exam-type-service:
-    build:
-      context: ./exam-type-service
-    ports:
-      - "5002:5000"
-
-  question-service:
-    build:
-      context: ./question-service
-    ports:
-      - "5003:5000"
-
-  category-service:
-    build:
-      context: ./category-service
-    ports:
-      - "5004:5000"
+    volumes:
+      - ./user-service:/app
+      - ./data/users:/app/users  # Volume to persist SQLite db
+    environment:
+      - FLASK_ENV=development
+    depends_on:
+      - init-user-db
 
   year-service:
     build:
       context: ./year-service
     ports:
-      - "5005:5000"
+      - "5002:5000"
+    volumes:
+      - ./year-service:/app
+      - ./data/years:/app/years  # Volume to persist SQLite db
+    environment:
+      - FLASK_ENV=development
+    depends_on:
+      - init-year-db
 
-  cart-service:
+  exam-type-service:
     build:
-      context: ./cart-service
+      context: ./exam-type-service
     ports:
-      - "5006:5000"
+      - "5003:5000"
+    volumes:
+      - ./exam-type-service:/app
+      - ./data/examtypes:/app/examtypes  # Volume to persist SQLite db
+    environment:
+      - FLASK_ENV=development
+    depends_on:
+      - init-examtype-db
+
+  question-service:
+    build:
+      context: ./question-service
+    ports:
+      - "5004:5000"
+    volumes:
+      - ./question-service:/app
+      - ./data/questions:/app/questions  # Volume to persist SQLite db
+    environment:
+      - FLASK_ENV=development
+    depends_on:
+      - init-question-db
+
+  category-service:
+    build:
+      context: ./category-service
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./category-service:/app
+    environment:
+      - FLASK_ENV=development
+    depends_on:
+      - question-service
+      - exam-type-service
+
+  # Initialize SQLite database files for each service
+  init-user-db:
+    image: busybox
+    volumes:
+      - ./data/users:/app/users
+    command: ['/bin/sh', '-c', 'touch /app/users/users.db']
+
+  init-year-db:
+    image: busybox
+    volumes:
+      - ./data/years:/app/years
+    command: ['/bin/sh', '-c', 'touch /app/years/years.db']
+
+  init-examtype-db:
+    image: busybox
+    volumes:
+      - ./data/examtypes:/app/examtypes
+    command: ['/bin/sh', '-c', 'touch /app/examtypes/exam_types.db']
+
+  init-question-db:
+    image: busybox
+    volumes:
+      - ./data/questions:/app/questions
+    command: ['/bin/sh', '-c', 'touch /app/questions/questions.db']
+
+volumes:
+  user-data:
+  year-data:
+  exam-type-data:
+  question-data:

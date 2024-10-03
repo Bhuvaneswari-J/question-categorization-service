@@ -1,24 +1,66 @@
 from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
+import requests
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///categories.db'
-db = SQLAlchemy(app)
 
-class Category(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    question_id = db.Column(db.Integer, nullable=False)
-    subject_id = db.Column(db.Integer, nullable=False)
-    keyword_id = db.Column(db.Integer, nullable=False)
+# Root route
+@app.route('/')
+def index():
+    return jsonify({'message': 'Welcome to the Categorization API!'}), 200
 
-@app.route('/categorize', methods=['POST'])
-def categorize():
-    data = request.get_json()
-    new_category = Category(question_id=data['question_id'], subject_id=data['subject_id'], keyword_id=data['keyword_id'])
-    db.session.add(new_category)
-    db.session.commit()
-    return jsonify({'message': 'Question categorized'}), 201
+# Endpoint to get question text and categorize it based on subject and keywords
+@app.route('/categorize/<int:question_id>', methods=['GET'])
+def categorize_question(question_id):
+    # Fetch the question text from the Question Service
+    try:
+        response = requests.get(f'http://localhost:5001/question/{question_id}')  # Question Service endpoint
+        response.raise_for_status()  # Raise an error for bad responses
+        question_data = response.json()
+        question_text = question_data['text']
+    except requests.exceptions.RequestException as e:
+        return jsonify({'message': f'Error fetching question: {str(e)}'}), 500
+
+    # Fetch subjects from the Exam Types Service
+    try:
+        subjects_response = requests.get('http://localhost:5002/subjects')  # Exam Types Service endpoint for subjects
+        subjects_response.raise_for_status()
+        subjects = subjects_response.json()
+    except requests.exceptions.RequestException as e:
+        return jsonify({'message': f'Error fetching subjects: {str(e)}'}), 500
+
+    # Fetch keywords from the Exam Types Service
+    try:
+        keywords_response = requests.get('http://localhost:5002/keywords')  # Exam Types Service endpoint for keywords
+        keywords_response.raise_for_status()
+        keywords = keywords_response.json()
+    except requests.exceptions.RequestException as e:
+        return jsonify({'message': f'Error fetching keywords: {str(e)}'}), 500
+
+    categories = []
+
+    # Categorize question based on subjects and keywords
+    for subject in subjects:
+        if subject['name'].lower() in question_text.lower():
+            category_info = {
+                'subject': subject['name'],
+                'keywords': []
+            }
+            # Find related keywords for the matching subject
+            related_keywords = [kw for kw in keywords if kw['subject_id'] == subject['id']]
+            for keyword in related_keywords:
+                if keyword['value'].lower() in question_text.lower():
+                    category_info['keywords'].append(keyword['value'])
+            categories.append(category_info)
+
+    if not categories:
+        return jsonify({'message': 'No categories found for this question'}), 404
+
+    return jsonify({
+        'question_id': question_id,
+        'question_text': question_text,
+        'categories': categories
+    }), 200
 
 if __name__ == '__main__':
-    db.create_all()
-    app.run(debug=True, host='0.0.0.0')
+    # Run the Flask application
+    app.run(debug=True, host='0.0.0.0', port=5000)
